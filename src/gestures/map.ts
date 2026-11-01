@@ -27,7 +27,7 @@ export interface GestureState {
   right: HandFeatures | null;
 }
 
-const HOLD_MS = 140;
+const HOLD_MS = 110; /* chord changes feel snappier; still debounced */
 
 /* Height zones for the pitch shift: top 20% = raise, bottom 20% =
    lower, middle neutral - a dead zone in the center stops accidental
@@ -101,7 +101,7 @@ export class GestureMapper {
 
       /* tilt: positive = inward = major, negative = outward = minor,
          dead zone in between = diatonic */
-      const triad: Triad | null = left.tilt > 0.18 ? "major" : left.tilt < -0.18 ? "minor" : null;
+      const triad: Triad | null = left.tilt > 0.24 ? "major" : left.tilt < -0.24 ? "minor" : null;
       this.stable("triad", triad);
 
       const shift = zoneShift(left.height, this.raiseEnabled, this.lowerEnabled);
@@ -125,7 +125,7 @@ export class GestureMapper {
 
       /* filter: inward tilt brightens, outward darkens - tilt is now
          signed positive=inward for both hands, so one mapping works */
-      const f = Math.min(1, Math.max(0, 0.5 + right.tilt * 1.6));
+      const f = Math.min(1, Math.max(0, 0.5 + right.tilt * 1.9));
       this.state.filter = this.state.filter + (f - this.state.filter) * 0.35;
 
       /* height: hand near top = loud, near bottom = quiet */

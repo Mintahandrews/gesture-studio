@@ -106,7 +106,7 @@ export class HandTracker {
         lm.forEach((p, j) => {
           const s = prev[j]!;
           const speed = Math.hypot(p.x - s.x, p.y - s.y);
-          const a = Math.min(0.85, 0.3 + speed * 6);
+          const a = Math.min(0.85, 0.38 + speed * 6);
           s.x += (p.x - s.x) * a;
           s.y += (p.y - s.y) * a;
           s.z += ((p.z ?? 0) - (s.z ?? 0)) * a;
@@ -139,7 +139,7 @@ const dist = (a: NormalizedLandmark, b: NormalizedLandmark) =>
    (mcp→pip) and (pip→tip) segments - angle-based beats distance-ratio
    because it doesn't care which way the hand faces the camera. Fully
    straight ≈ 0 rad; >~0.7 rad reads as curled. */
-const CURL_LIMIT = 0.65;
+const CURL_LIMIT = 0.72; /* slightly bent fingers still count as up - relaxed hands shouldn't read as curled */
 const fingerExtended = (lm: NormalizedLandmark[], mcp: number, pip: number, tip: number) => {
   const a = lm[mcp]!, b = lm[pip]!, c = lm[tip]!;
   const v1 = { x: b.x - a.x, y: b.y - a.y, z: (b.z ?? 0) - (a.z ?? 0) };
