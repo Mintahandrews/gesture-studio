@@ -212,40 +212,34 @@ h1, h2, h3 {
   font-size: 12px;
 }
 
-/* -- persistent guide sheet ----------------------------------------
-   Not a modal: a glass side panel over the live feed so the user can
-   keep playing while reading it. Left on desktop, bottom sheet on
-   phones. */
+/* -- guide panel ---------------------------------------------------
+   In-flow layout panel, not an overlay: on desktop it's a cream
+   column beside the stage; on mobile a sheet below the stage. The
+   feed is never covered - the whole point is watching yourself while
+   reading the gestures. */
+.app-shell { flex-direction: row; }
+
 .guide-sheet {
-  position: fixed;
-  top: 0;
-  left: 0;
-  bottom: 0;
-  width: min(420px, 94vw);
+  flex: 0 0 360px;
+  max-width: 360px;
+  height: 100%;
   z-index: 40;
-  padding: 24px 24px;
-  padding-top: calc(24px + env(safe-area-inset-top, 0px));
-  padding-bottom: calc(24px + env(safe-area-inset-bottom, 0px));
-  background: rgba(10, 10, 10, 0.62);
-  -webkit-backdrop-filter: blur(18px);
-  backdrop-filter: blur(18px);
-  border-right: 1px solid rgba(255, 255, 255, 0.14);
-  color: var(--color-eggshell);
+  padding: 22px 22px;
+  padding-top: calc(22px + env(safe-area-inset-top, 0px));
+  padding-bottom: calc(22px + env(safe-area-inset-bottom, 0px));
+  background: var(--color-eggshell);
+  border-right: 1px solid var(--color-stone);
+  color: var(--color-ink);
   display: flex;
   flex-direction: column;
   animation: guide-in 0.25s ease-out;
+  overflow: hidden;
 }
 @keyframes guide-in {
   from { transform: translateX(-24px); opacity: 0; }
   to { transform: translateX(0); opacity: 1; }
 }
-.guide-scroll {
-  overflow-y: auto;
-  flex: 1;
-  padding-right: 4px;
-  /* scrollable but no visible bar - keep the sheet clean */
-  scrollbar-width: none;
-}
+.guide-scroll { overflow-y: auto; flex: 1; scrollbar-width: none; }
 .guide-scroll::-webkit-scrollbar { display: none; }
 
 .guide-row {
@@ -255,7 +249,7 @@ h1, h2, h3 {
   gap: 12px;
   padding: 8px 10px;
   margin: 0 -10px;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.09);
+  border-bottom: 1px solid var(--color-stone);
   border-radius: 10px;
   font-size: 14px;
   transition: background 0.15s;
@@ -263,12 +257,12 @@ h1, h2, h3 {
 .guide-row-key {
   font-family: var(--font-mono);
   font-size: 12.5px;
-  color: rgba(255, 255, 255, 0.8);
+  color: var(--color-graphite);
   display: inline-flex;
   align-items: center;
   gap: 10px;
 }
-.guide-row-val { color: rgba(255, 255, 255, 0.6); text-align: right; font-size: 13px; }
+.guide-row-val { color: var(--color-smoke); text-align: right; font-size: 13px; }
 .guide-live {
   display: block;
   font-style: normal;
@@ -279,23 +273,22 @@ h1, h2, h3 {
 /* the active gesture row lights up - learn by watching which row
    answers your hand */
 .guide-row-on {
-  background: rgba(255, 255, 255, 0.12);
-  border-color: rgba(255, 255, 255, 0.4);
+  background: var(--color-warm-taupe);
+  border-color: var(--color-ash);
 }
-.guide-row-on .guide-row-key { color: #fff; }
-.guide-tip { font-size: 12.5px; color: rgba(255,255,255,.55); margin: 16px 2px 0; line-height: 1.55; }
+.guide-row-on .guide-row-key { color: var(--color-ink); }
+.guide-tip { font-size: 12.5px; color: var(--color-ash); margin: 16px 2px 0; line-height: 1.55; }
 
 @media (max-width: 640px) {
+  .app-shell { flex-direction: column-reverse; }
   .guide-sheet {
-    top: auto;
-    left: 0;
-    right: 0;
-    bottom: 0;
+    flex: 0 0 auto;
+    max-width: none;
     width: 100%;
-    max-height: 58vh;
+    height: auto;
+    max-height: 46vh;
     border-right: none;
-    border-top: 1px solid rgba(255, 255, 255, 0.14);
-    border-radius: 22px 22px 0 0;
+    border-top: 1px solid var(--color-stone);
     animation: guide-in-up 0.25s ease-out;
   }
   @keyframes guide-in-up {

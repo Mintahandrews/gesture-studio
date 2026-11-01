@@ -129,8 +129,14 @@ export default function App() {
   const instrument = INSTRUMENTS.find((i) => i.id === instrumentId)!;
 
   return (
-    <div style={{ position: "fixed", inset: 0, overflow: "hidden", background: "var(--color-ink)" }}>
-      {/* fullscreen camera stage */}
+    <div className="app-shell" style={{ position: "fixed", inset: 0, overflow: "hidden", background: "var(--color-ink)", display: "flex" }}>
+      {/* guide panel - in-flow sibling, pushes the stage instead of
+          covering it: users see themselves AND the sheet together */}
+      {guide && <Guide gs={gs} onClose={() => setGuide(false)} />}
+
+      {/* stage wrapper - relative so the feed/chrome stay inside it
+          when the guide panel takes column width */}
+      <div className="stage" style={{ position: "relative", flex: 1, minWidth: 0 }}>
       <video
         ref={videoRef}
         muted
@@ -276,7 +282,7 @@ export default function App() {
         </div>
       )}
 
-      {guide && <Guide gs={gs} onClose={() => setGuide(false)} />}
+      </div>{/* /stage */}
     </div>
   );
 }
@@ -388,8 +394,8 @@ function Guide({ gs, onClose }: { gs: GestureState | null; onClose: () => void }
   return (
     <div className="guide-sheet">
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
-        <h2 style={{ fontSize: 28, color: "var(--color-eggshell)" }}>how to play</h2>
-        <button className="glass glass-btn" onClick={onClose} aria-label="close guide"><X size={16} /></button>
+        <h2 style={{ fontSize: 28 }}>how to play</h2>
+        <button className="pill pill-ghost" onClick={onClose} aria-label="close guide"><X size={16} /></button>
       </div>
       <div className="guide-scroll">
         <GSection title="left hand - the chord">
@@ -422,8 +428,8 @@ function Guide({ gs, onClose }: { gs: GestureState | null; onClose: () => void }
 function GSection({ title, children }: { title: string; children: React.ReactNode }) {
   return (
     <div style={{ marginTop: 16 }}>
-      <div className="caption" style={{ marginBottom: 6, color: "rgba(255,255,255,.5)" }}>{title}</div>
-      <div style={{ borderTop: "1px solid rgba(255,255,255,.14)" }}>{children}</div>
+      <div className="caption" style={{ marginBottom: 6 }}>{title}</div>
+      <div style={{ borderTop: "1px solid var(--color-stone)" }}>{children}</div>
     </div>
   );
 }
