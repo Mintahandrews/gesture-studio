@@ -106,7 +106,7 @@ export class HandTracker {
         lm.forEach((p, j) => {
           const s = prev[j]!;
           const speed = Math.hypot(p.x - s.x, p.y - s.y);
-          const a = Math.min(0.85, 0.38 + speed * 6);
+          const a = Math.min(0.9, 0.45 + speed * 7);
           s.x += (p.x - s.x) * a;
           s.y += (p.y - s.y) * a;
           s.z += ((p.z ?? 0) - (s.z ?? 0)) * a;
@@ -129,24 +129,28 @@ export class HandTracker {
 
 /* -- landmark → feature math ---------------------------------------- */
 
-/* 3D-aware distance - MediaPipe z is relative depth around the wrist
-   plane; including it keeps the math honest when a finger points
-   toward the camera (the 2D projection foreshortens badly). */
+/* 2D-only distances. MediaPipe's z is a synthetic estimate and jitters
+   several % frame-to-frame - including it made finger reads unstable.
+   The palm faces the camera in this grammar so x/y suffice. */
 const dist = (a: NormalizedLandmark, b: NormalizedLandmark) =>
-  Math.hypot(a.x - b.x, a.y - b.y, (a.z ?? 0) - (b.z ?? 0));
+  Math.hypot(a.x - b.x, a.y - b.y);
 
-/* Extension measured by the angle at the PIP joint between the
-   (mcp→pip) and (pip→tip) segments - angle-based beats distance-ratio
-   because it doesn't care which way the hand faces the camera. Fully
-   straight ≈ 0 rad; >~0.7 rad reads as curled. */
-const CURL_LIMIT = 0.72; /* slightly bent fingers still count as up - relaxed hands shouldn't read as curled */
+/* Finger extension = BOTH checks, not one:
+   1. angle at the PIP joint (mcp→pip→tip) < CURL_LIMIT - orientation-
+      independent curl measure
+   2. tip is further from the wrist than the PIP - kills false positives
+      where a knuckle bends but the angle stays shallow
+   Requiring both is what makes edge cases (half-curled fingers,
+   tilted hands) read consistently instead of flickering. */
+const CURL_LIMIT = 0.75;
 const fingerExtended = (lm: NormalizedLandmark[], mcp: number, pip: number, tip: number) => {
   const a = lm[mcp]!, b = lm[pip]!, c = lm[tip]!;
-  const v1 = { x: b.x - a.x, y: b.y - a.y, z: (b.z ?? 0) - (a.z ?? 0) };
-  const v2 = { x: c.x - b.x, y: c.y - b.y, z: (c.z ?? 0) - (b.z ?? 0) };
-  const dot = v1.x * v2.x + v1.y * v2.y + v1.z * v2.z;
-  const m = Math.hypot(v1.x, v1.y, v1.z) * Math.hypot(v2.x, v2.y, v2.z);
-  return Math.acos(Math.min(1, Math.max(-1, dot / (m || 1)))) < CURL_LIMIT;
+  const v1 = { x: b.x - a.x, y: b.y - a.y };
+  const v2 = { x: c.x - b.x, y: c.y - b.y };
+  const dot = v1.x * v2.x + v1.y * v2.y;
+  const m = Math.hypot(v1.x, v1.y) * Math.hypot(v2.x, v2.y);
+  const angle = Math.acos(Math.min(1, Math.max(-1, dot / (m || 1))));
+  return angle < CURL_LIMIT && dist(c, lm[0]!) > dist(b, lm[0]!) * 1.02;
 };
 
 export function handFeatures(
@@ -169,12 +173,14 @@ export function handFeatures(
   const pinkyMcp = lm[17]!;
   const wrist = lm[0]!;
 
-  /* Thumb spread: tip-to-index-knuckle distance against palm width.
-     Tucked ≈ <0.5 of the palm span, hitchhike ≈ >0.8. */
-  const palmWidth = dist(indexMcp, pinkyMcp) || 0.001;
-  const thumbSpread = dist(thumbTip, indexMcp) / palmWidth;
-  const thumbOut = thumbSpread > 0.78;
-  const thumbIn = thumbSpread < 0.48;
+  /* Thumb spread normalized by the wrist→middle-knuckle span, which is
+     far more stable than the knuckle-to-knuckle palm width (that width
+     collapses when the hand tilts in depth). Tucked ≈ <0.55 of the
+     palm span, hitchhike ≈ >0.95. */
+  const palmSpan = dist(wrist, lm[9]!) || 0.001;
+  const thumbSpread = dist(thumbTip, indexMcp) / palmSpan;
+  const thumbOut = thumbSpread > 0.95;
+  const thumbIn = thumbSpread < 0.55;
   digits.thumb = thumbOut;
 
   /* Palm roll via the index→pinky knuckle line. atan2 lands near ±π
