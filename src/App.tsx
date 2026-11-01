@@ -8,7 +8,7 @@ import {
 import { engine, type Intent } from "./music/engine";
 import { INSTRUMENTS } from "./music/instruments";
 import { KEYS, type KeyName } from "./music/theory";
-import { HandTracker, handFeatures, HAND_EDGES, type HandFeatures } from "./gestures/hands";
+import { HandTracker, handFeatures, type HandFeatures } from "./gestures/hands";
 import { GestureMapper, type GestureState } from "./gestures/map";
 import type { HandLandmarkerResult } from "@mediapipe/tasks-vision";
 
@@ -23,9 +23,9 @@ export default function App() {
   const [instrumentId, setInstrumentId] = useState(INSTRUMENTS[0]!.id);
   const [guide, setGuide] = useState(false);
   const [leftOnly, setLeftOnly] = useState(false);
-  /* Dock collapses so the stage stays the product - on small screens
-     the two picker rows would eat a third of the frame. */
-  const [dockOpen, setDockOpen] = useState(true);
+  /* Dock collapses so the stage stays the product - starts collapsed
+     on phones where the picker rows would eat a third of the frame. */
+  const [dockOpen, setDockOpen] = useState(() => typeof window !== "undefined" && window.innerWidth > 640);
   /* pitch-shift direction toggles - the mapper reads live refs */
   const [raiseOn, setRaiseOn] = useState(true);
   const [lowerOn, setLowerOn] = useState(true);
@@ -265,15 +265,15 @@ export default function App() {
         )}
       </footer>
 
-      {/* iOS silent switch eats WebAudio - one-shot heads-up */}
+      {/* iOS silent switch eats WebAudio - one-shot heads-up, bottom-right
+          like the reference so it doesn't cover the HUD */}
       {phase === "live" && soundHint && (
-        <button
-          className="glass glass-btn"
-          onClick={() => setSoundHint(false)}
-          style={{ position: "absolute", top: "22%", left: "50%", transform: "translateX(-50%)", zIndex: 15 }}
-        >
-          🔇 no sound? check silent mode · ✕
-        </button>
+        <div style={{ position: "absolute", bottom: "24%", right: 14, zIndex: 15, maxWidth: 240 }} className="glass glass-btn" onClick={() => setSoundHint(false)} role="button">
+          <span style={{ fontSize: 12, lineHeight: 1.5 }}>
+            <strong style={{ color: "var(--color-ember-orange)", display: "block", letterSpacing: "0.06em" }}>NO SOUND?</strong>
+            Check that Silent Mode is off and volume is turned up. <span style={{ opacity: 0.6 }}>✕</span>
+          </span>
+        </div>
       )}
 
       {guide && <Guide gs={gs} onClose={() => setGuide(false)} />}
@@ -302,68 +302,31 @@ function drawOverlay(
   const draw = (f: HandFeatures | null, color: string) => {
     if (!f) return;
     /* Landmarks are in RAW frame coords; the video is CSS-mirrored, so
-       flip x here or the skeleton lands on the wrong side. */
+       flip x here or the skeleton lands on the wrong side.
+       Minimal dot style (like the reference): soft dots on every
+       landmark, fingertips slightly bigger - no bones cluttering the
+       feed. Dots tint with the hand color so left/right still reads. */
     const px = (p: { x: number; y: number }) => [(1 - p.x) * cw, p.y * ch] as const;
+    const tips = new Set([4, 8, 12, 16, 20]);
 
-    /* which finger chains are extended - index/middle/ring/pinky →
-       their bone + fingertip chain brightens, curled fingers dim, so
-       the chord shape reads at a glance */
-    const fingerChain: [number, boolean][] = [
-      [1, f.digits.thumb], [2, f.digits.index], [3, f.digits.middle],
-      [4, f.digits.ring], [5, f.digits.pinky],
-    ];
-    const chainBones: Record<number, [number, number][]> = {
-      1: [[0, 1], [1, 2], [2, 3], [3, 4]],
-      2: [[0, 5], [5, 6], [6, 7], [7, 8]],
-      3: [[9, 10], [10, 11], [11, 12], [5, 9]],
-      4: [[13, 14], [14, 15], [15, 16], [9, 13]],
-      5: [[17, 18], [18, 19], [19, 20], [13, 17], [0, 17]],
-    };
-
-    /* bones: dim base, bright on the extended finger's chain */
-    ctx.strokeStyle = color;
-    ctx.lineCap = "round";
-    ctx.lineJoin = "round";
-    ctx.globalAlpha = 0.35;
-    ctx.lineWidth = 1.5;
-    for (const [a, b] of HAND_EDGES) {
-      const [ax, ay] = px(f.landmarks[a]!);
-      const [bx, by] = px(f.landmarks[b]!);
-      ctx.beginPath(); ctx.moveTo(ax, ay); ctx.lineTo(bx, by); ctx.stroke();
-    }
-    ctx.globalAlpha = 0.95;
-    ctx.lineWidth = 2.4;
-    ctx.shadowColor = color;
-    ctx.shadowBlur = 6;
-    for (const [chain, up] of fingerChain) {
-      if (!up) continue;
-      for (const [a, b] of chainBones[chain]!) {
-        const [ax, ay] = px(f.landmarks[a]!);
-        const [bx, by] = px(f.landmarks[b]!);
-        ctx.beginPath(); ctx.moveTo(ax, ay); ctx.lineTo(bx, by); ctx.stroke();
-      }
-    }
-    ctx.shadowBlur = 0;
-
-    /* knuckle joints - small rings, not dots (cleaner over skin) */
+    ctx.fillStyle = "#ffffff";
     ctx.globalAlpha = 0.85;
-    ctx.lineWidth = 1.6;
-    for (const p of f.landmarks) {
+    f.landmarks.forEach((p, i) => {
       const [x, y] = px(p);
-      ctx.beginPath(); ctx.arc(x, y, 3, 0, Math.PI * 2); ctx.stroke();
-    }
-
-    /* fingertips - solid core + halo; extended tips pulse larger */
-    const tips: [number, boolean][] = [
-      [4, f.digits.thumb], [8, f.digits.index], [12, f.digits.middle],
-      [16, f.digits.ring], [20, f.digits.pinky],
-    ];
-    for (const [t, up] of tips) {
+      /* soft shadow so dots stay visible on light skin/sky */
+      ctx.beginPath();
+      ctx.arc(x, y, tips.has(i) ? 5.5 : 4, 0, Math.PI * 2);
+      ctx.fill();
+    });
+    /* fingertip halo in the hand's color - the playable ends read
+       brighter without a bone skeleton */
+    ctx.fillStyle = color;
+    for (const t of tips) {
       const [x, y] = px(f.landmarks[t]!);
-      ctx.globalAlpha = up ? 0.28 : 0.12;
-      ctx.beginPath(); ctx.arc(x, y, up ? 17 : 11, 0, Math.PI * 2); ctx.fill();
+      ctx.globalAlpha = 0.3;
+      ctx.beginPath(); ctx.arc(x, y, 11, 0, Math.PI * 2); ctx.fill();
       ctx.globalAlpha = 1;
-      ctx.beginPath(); ctx.arc(x, y, up ? 6.5 : 4.5, 0, Math.PI * 2); ctx.fill();
+      ctx.beginPath(); ctx.arc(x, y, 3, 0, Math.PI * 2); ctx.fill();
     }
     ctx.globalAlpha = 1;
   };
