@@ -1,0 +1,372 @@
+@import url("https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500&family=Space+Grotesk:wght@300&display=swap");
+
+:root {
+  /* ElevenLabs-style editorial system - warm cream paper, ink type,
+     violet + ember sparks reserved for product visuals only. */
+  --color-eggshell: #fdfcfc;
+  --color-warm-taupe: #f5f3f1;
+  --color-stone: #ebe8e4;
+  --color-ink: #000000;
+  --color-graphite: #44403b;
+  --color-smoke: #777169;
+  --color-ash: #a59f97;
+  --color-violet-spark: #0447ff;
+  --color-ember-orange: #ff4704;
+  --color-danger: #d94040;
+
+  /* Waldenburg substitute - Space Grotesk 300 carries the whisper-weight
+     display voice; Inter 300 is the documented fallback. */
+  --font-display: "Space Grotesk", "Inter", ui-sans-serif, system-ui, sans-serif;
+  --font-ui: "Inter", ui-sans-serif, system-ui, -apple-system, sans-serif;
+  --font-mono: ui-monospace, SFMono-Regular, Menlo, monospace;
+
+  --radius-card: 20px;
+  --radius-card-lg: 24px;
+  --radius-pill: 9999px;
+
+  --hairline: 1px solid var(--color-stone);
+  --shadow-whisper:
+    rgba(0, 0, 0, 0.4) 0 0 1px 0,
+    rgba(0, 0, 0, 0.04) 0 1px 1px 0,
+    rgba(0, 0, 0, 0.04) 0 2px 4px 0;
+
+  --page-max: 1280px;
+}
+
+* { box-sizing: border-box; }
+
+html, body {
+  margin: 0;
+  padding: 0;
+  background: var(--color-eggshell);
+  color: var(--color-ink);
+  font-family: var(--font-ui);
+  -webkit-font-smoothing: antialiased;
+  /* the stage is a fixed instrument surface - no scroll, no bounce,
+     no double-tap zoom stealing gestures */
+  overscroll-behavior: none;
+  touch-action: none;
+  height: 100%;
+}
+
+h1, h2, h3 {
+  font-family: var(--font-display);
+  font-weight: 300;
+  margin: 0;
+  letter-spacing: -0.02em;
+}
+
+.muted { color: var(--color-smoke); }
+.caption { color: var(--color-ash); font-size: 12px; letter-spacing: 0.02em; }
+
+/* Pills - the system's signature control */
+.pill {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  font-family: var(--font-ui);
+  font-size: 14px;
+  font-weight: 500;
+  border-radius: var(--radius-pill);
+  border: 1px solid #e5e5e5;
+  background: var(--color-eggshell);
+  color: var(--color-ink);
+  padding: 9px 18px;
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s, transform 0.1s;
+  white-space: nowrap;
+  user-select: none;
+}
+.pill:hover { background: var(--color-warm-taupe); }
+.pill:active { transform: scale(0.97); }
+.pill:disabled { opacity: 0.45; cursor: default; transform: none; }
+
+.pill-fill {
+  background: var(--color-ink);
+  color: var(--color-eggshell);
+  border-color: var(--color-ink);
+}
+.pill-fill:hover { background: var(--color-graphite); }
+
+.pill-ghost { border-color: transparent; background: transparent; }
+.pill-ghost:hover { background: var(--color-warm-taupe); }
+
+/* Selected state for segmented/picker pills - ink ring, not a fill
+   change, so selection reads as a mark not a mode. */
+.pill-sel {
+  border-color: var(--color-ink);
+  box-shadow: 0 0 0 1px var(--color-ink) inset;
+}
+
+/* Feature card - flat warm taupe, no shadow */
+.card {
+  background: var(--color-warm-taupe);
+  border-radius: var(--radius-card);
+  padding: 20px 24px;
+}
+.card-white {
+  background: var(--color-eggshell);
+  border-radius: var(--color-eggshell);
+  border-radius: var(--radius-card);
+  box-shadow: var(--shadow-whisper);
+}
+
+/* Segmented pill rows (key picker, instrument picker) - a fixed-height
+   scroll strip; content clips rather than wraps so the HUD never
+   pushes the camera stage around. */
+.pill-row {
+  display: flex;
+  gap: 6px;
+  overflow-x: auto;
+  scrollbar-width: none;
+  padding: 2px;
+}
+.pill-row::-webkit-scrollbar { display: none; }
+
+/* HUD readout chips - mono micro-copy on a hairline plate */
+.hud-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-family: var(--font-mono);
+  font-size: 12px;
+  color: var(--color-graphite);
+  background: var(--color-warm-taupe);
+  border-radius: var(--radius-pill);
+  padding: 6px 12px;
+}
+
+/* Skeleton - flat shimmer on taupe, matching loaded geometry */
+@keyframes shimmer {
+  0% { opacity: 0.55; }
+  50% { opacity: 1; }
+  100% { opacity: 0.55; }
+}
+.skeleton {
+  background: var(--color-stone);
+  border-radius: 8px;
+  animation: shimmer 1.6s ease-in-out infinite;
+}
+
+/* Level meter - stone track, ink fill; the only moving meter */
+.meter {
+  height: 4px;
+  width: 100%;
+  border-radius: 999px;
+  background: var(--color-stone);
+  overflow: hidden;
+}
+.meter > i {
+  display: block;
+  height: 100%;
+  background: var(--color-ink);
+  border-radius: 999px;
+  transition: width 90ms linear;
+}
+
+/* -- floating chrome over the camera feed --------------------------
+   Dark glass over the video: the cream surfaces stay for the landing
+   and guide (document contexts), the live stage reads as a dark
+   room - instrument UI floating on the feed. */
+.glass {
+  background: rgba(0, 0, 0, 0.44);
+  -webkit-backdrop-filter: blur(14px);
+  backdrop-filter: blur(14px);
+  color: var(--color-eggshell);
+  border: 1px solid rgba(255, 255, 255, 0.14);
+}
+
+.chrome {
+  position: absolute;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 14px 20px;
+  z-index: 10;
+}
+.chrome-top {
+  top: 0; left: 0; right: 0;
+  padding-top: calc(14px + env(safe-area-inset-top, 0px));
+}
+.chrome-bottom {
+  bottom: 0; left: 0; right: 0;
+  padding-bottom: calc(14px + env(safe-area-inset-bottom, 0px));
+}
+
+.logo-chip {
+  font-family: var(--font-display);
+  font-size: 19px;
+  font-weight: 300;
+  letter-spacing: -0.02em;
+  padding: 8px 16px;
+  border-radius: var(--radius-pill);
+}
+
+.dock-label { margin-bottom: 5px; color: rgba(255, 255, 255, 0.55); }
+.dock-hint { color: rgba(255, 255, 255, 0.7); text-transform: none; letter-spacing: 0; }
+
+/* Collapse toggle sits above the dock card, right-aligned */
+.dock-toggle {
+  align-self: flex-end;
+  font-size: 12px;
+}
+
+/* -- persistent guide sheet ----------------------------------------
+   Not a modal: a glass side panel over the live feed so the user can
+   keep playing while reading it. Left on desktop, bottom sheet on
+   phones. */
+.guide-sheet {
+  position: fixed;
+  top: 0;
+  left: 0;
+  bottom: 0;
+  width: min(420px, 94vw);
+  z-index: 40;
+  padding: 24px 24px;
+  padding-top: calc(24px + env(safe-area-inset-top, 0px));
+  padding-bottom: calc(24px + env(safe-area-inset-bottom, 0px));
+  background: rgba(10, 10, 10, 0.62);
+  -webkit-backdrop-filter: blur(18px);
+  backdrop-filter: blur(18px);
+  border-right: 1px solid rgba(255, 255, 255, 0.14);
+  color: var(--color-eggshell);
+  display: flex;
+  flex-direction: column;
+  animation: guide-in 0.25s ease-out;
+}
+@keyframes guide-in {
+  from { transform: translateX(-24px); opacity: 0; }
+  to { transform: translateX(0); opacity: 1; }
+}
+.guide-scroll {
+  overflow-y: auto;
+  flex: 1;
+  padding-right: 4px;
+  /* scrollable but no visible bar - keep the sheet clean */
+  scrollbar-width: none;
+}
+.guide-scroll::-webkit-scrollbar { display: none; }
+
+.guide-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  padding: 8px 10px;
+  margin: 0 -10px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.09);
+  border-radius: 10px;
+  font-size: 14px;
+  transition: background 0.15s;
+}
+.guide-row-key {
+  font-family: var(--font-mono);
+  font-size: 12.5px;
+  color: rgba(255, 255, 255, 0.8);
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+}
+.guide-row-val { color: rgba(255, 255, 255, 0.6); text-align: right; font-size: 13px; }
+.guide-live {
+  display: block;
+  font-style: normal;
+  font-size: 11px;
+  color: var(--color-ember-orange);
+  margin-top: 2px;
+}
+/* the active gesture row lights up - learn by watching which row
+   answers your hand */
+.guide-row-on {
+  background: rgba(255, 255, 255, 0.12);
+  border-color: rgba(255, 255, 255, 0.4);
+}
+.guide-row-on .guide-row-key { color: #fff; }
+.guide-tip { font-size: 12.5px; color: rgba(255,255,255,.55); margin: 16px 2px 0; line-height: 1.55; }
+
+@media (max-width: 640px) {
+  .guide-sheet {
+    top: auto;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    width: 100%;
+    max-height: 58vh;
+    border-right: none;
+    border-top: 1px solid rgba(255, 255, 255, 0.14);
+    border-radius: 22px 22px 0 0;
+    animation: guide-in-up 0.25s ease-out;
+  }
+  @keyframes guide-in-up {
+    from { transform: translateY(24px); opacity: 0; }
+    to { transform: translateY(0); opacity: 1; }
+  }
+}
+
+.glass-btn {
+  font-family: var(--font-ui);
+  font-size: 13px;
+  font-weight: 500;
+  border-radius: var(--radius-pill);
+  padding: 8px 14px;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  transition: background 0.15s;
+}
+.glass-btn:hover { background: rgba(0, 0, 0, 0.6); }
+/* Selected = a quiet white ring on the glass, not the browser's blue
+   focus outline. (Focus still gets a visible ring for keyboard nav.) */
+.glass-btn:focus, .pill-dark:focus { outline: none; }
+.glass-btn:focus-visible, .pill-dark:focus-visible {
+  outline: 2px solid rgba(255, 255, 255, 0.8);
+  outline-offset: 1px;
+}
+.glass-sel { border-color: rgba(255, 255, 255, 0.55); box-shadow: 0 0 0 1px rgba(255,255,255,0.55) inset; }
+
+.glass-dock {
+  border-radius: var(--radius-card-lg);
+  padding: 14px 16px;
+  max-width: 720px;
+  margin: 0 auto;
+  width: 100%;
+}
+
+/* Pills on the dark dock */
+.pill-dark {
+  background: rgba(255, 255, 255, 0.08);
+  border-color: rgba(255, 255, 255, 0.14);
+  color: var(--color-eggshell);
+  font-size: 13px;
+  padding: 7px 14px;
+}
+.pill-dark:hover { background: rgba(255, 255, 255, 0.16); }
+.pill-sel-dark {
+  border-color: var(--color-eggshell);
+  box-shadow: 0 0 0 1px var(--color-eggshell) inset;
+  background: rgba(255, 255, 255, 0.14);
+}
+
+/* HUD chips on the dark dock */
+.hud-chip.hud-dark {
+  background: rgba(255, 255, 255, 0.08);
+  color: rgba(255, 255, 255, 0.75);
+}
+.meter-dark { background: rgba(255, 255, 255, 0.16); }
+.meter-dark > i { background: var(--color-eggshell); }
+
+/* The landing headline sits on cream so the blur backdrop shows the
+   camera feed faintly behind it once live. */
+@media (max-width: 640px) {
+  .chrome { padding-left: 12px; padding-right: 12px; }
+  .chrome-top { padding-top: calc(10px + env(safe-area-inset-top, 0px)); }
+  .chrome-bottom { padding-bottom: calc(10px + env(safe-area-inset-bottom, 0px)); }
+  .glass-dock { border-radius: 18px; }
+  .pill-dark { padding: 9px 14px; font-size: 13px; }  /* 44px-ish touch target */
+  .glass-btn { padding: 10px 12px; }
+  .logo-chip { font-size: 16px; padding: 8px 14px; }
+  /* wordy chip labels shrink to icons on phones */
+  .hide-sm { display: none; }
+}
