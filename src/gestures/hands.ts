@@ -99,9 +99,14 @@ export class HandTracker {
       if (!prev || prev.length !== lm.length) {
         this.smooth.set(handed, lm.map((p) => ({ ...p })));
       } else {
-        const a = 0.55;
+        /* Adaptive smoothing (one-euro style): heavy smoothing when the
+           hand is still (kills detector jitter), light smoothing when
+           moving fast (keeps tracking responsive). alpha is computed
+           per-landmark from frame-to-frame speed. */
         lm.forEach((p, j) => {
           const s = prev[j]!;
+          const speed = Math.hypot(p.x - s.x, p.y - s.y);
+          const a = Math.min(0.85, 0.3 + speed * 6);
           s.x += (p.x - s.x) * a;
           s.y += (p.y - s.y) * a;
           s.z += ((p.z ?? 0) - (s.z ?? 0)) * a;

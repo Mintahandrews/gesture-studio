@@ -32,6 +32,8 @@ class Engine {
   private insert: Tone.ToneAudioNode | null = null;
   private filter: Tone.Filter | null = null;
   private volume: Tone.Volume | null = null;
+  private comp: Tone.Compressor | null = null;
+  private limiter: Tone.Limiter | null = null;
   private reverb: Tone.Freeverb | null = null;
   private instrument: InstrumentDef = INSTRUMENTS[0]!;
   private chord: ChordSpec | null = null;
@@ -46,12 +48,19 @@ class Engine {
     if (this.started) return;
     await Tone.start();
     this.filter = new Tone.Filter(14000, "lowpass");
-    this.volume = new Tone.Volume(-6);
-    this.reverb = new Tone.Freeverb({ roomSize: 0.7, dampening: 2600, wet: 0.16 });
-    /* The whole chain: synth → [insert] → filter → volume → reverb →
-       out. filter.connect is the link that was missing - without it
-       everything upstream of volume is a dead end (no sound). */
-    this.filter.chain(this.volume, this.reverb, Tone.getDestination());
+    this.volume = new Tone.Volume(-4);
+    /* highpass at 55Hz cuts sub-rumble mud the ears can't use anyway,
+       keeping the low end pure on small speakers */
+    const hp = new Tone.Filter(55, "highpass");
+    /* compressor glues the chord voices + makeup gain, limiter catches
+       peaks so loud stack-ups never clip - this is the loudness stage */
+    this.comp = new Tone.Compressor({ threshold: -18, ratio: 3, attack: 0.01, release: 0.25 });
+    const makeup = new Tone.Volume(5);
+    this.limiter = new Tone.Limiter(-1);
+    this.reverb = new Tone.Freeverb({ roomSize: 0.62, dampening: 2800, wet: 0.14 });
+    /* synth → [insert] → filter → volume → hp → comp → makeup →
+       limiter → reverb → out */
+    this.filter.chain(this.volume, hp, this.comp, makeup, this.limiter, this.reverb, Tone.getDestination());
     this.setInstrument(this.instrument.id);
     this.started = true;
   }
