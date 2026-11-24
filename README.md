@@ -73,3 +73,7 @@ npx vercel --prod
 ## License
 
 [MIT](LICENSE) — hand-landmarker model file is Apache-2.0 (Google MediaPipe).
+
+---
+
+Built by [Andrews Mintah](https://codemintah.dev) · [codemintah](https://github.com/Mintahandrews)
